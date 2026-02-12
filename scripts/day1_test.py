@@ -3,9 +3,14 @@ Day 1 - API Extraction Testing Script
 Tests ESPN API client and validates data extraction.
 """
 
+import sys
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 from src.extraction.api_client import ESPNAPIClient
 from src.utils.logger import setup_logger
