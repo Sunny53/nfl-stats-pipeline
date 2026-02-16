@@ -1,11 +1,13 @@
 import sys
 from pathlib import Path
-PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
+
+# ... rest of file
 
 def get_engine():
     """Create database engine from Streamlit secrets or local .env."""

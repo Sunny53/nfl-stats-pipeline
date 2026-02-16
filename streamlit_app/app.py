@@ -1,5 +1,12 @@
+import sys
+from pathlib import Path
+
+# Add project root to path
+PROJECT_ROOT = Path(__file__).parent.resolve()
+sys.path.insert(0, str(PROJECT_ROOT))
+
 import streamlit as st
-from streamlit_app.utils.db import get_leaderboard, search_player, get_player_career_stats
+from utils.db import get_leaderboard, search_player, get_player_career_stats
 import pandas as pd
 
 st.set_page_config(
