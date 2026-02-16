@@ -28,8 +28,16 @@ def search_player(player_name: str):
     """Search for player by name."""
     engine = get_engine()
     query = """
-        SELECT p.*, 
-               s.season_year, s.team, s.games, s.snap_efficiency, s.consistency_score
+        SELECT p.player_id,
+               p.name,
+               p.position,
+               s.season_year, 
+               s.team, 
+               s.games, 
+               s.yards,
+               s.tds,
+               s.snap_efficiency, 
+               s.consistency_score
         FROM dim_players p
         LEFT JOIN fact_player_seasons s ON p.player_id = s.player_id
         WHERE p.name ILIKE %s

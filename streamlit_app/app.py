@@ -117,6 +117,18 @@ else:  # Player Search
                     with st.expander(f"{player['name']} ({player['position']})"):
                         player_data = results[results['player_id'] == player['player_id']]
                         
+                        # Handle missing data
+                    if player_data.empty:
+                        st.warning("No season data available")
+                    continue
+            
+                        # Drop rows with missing yards/tds for display
+                    player_data = player_data.dropna(subset=['yards', 'tds'])
+        
+                    if player_data.empty:
+                        st.warning("Incomplete data for this player")
+                        continue
+
                         col1, col2, col3 = st.columns(3)
                         
                         with col1:
