@@ -4,14 +4,30 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import pandas as pd
-from etl.load import get_engine
+import streamlit as st
+from sqlalchemy import create_engine, text
+
+def get_engine():
+    """Create database engine from Streamlit secrets or local .env."""
+    try:
+        # Try Streamlit Cloud secrets first
+        db_url = st.secrets["SUPABASE_DB_URL"]
+    except:
+        # Fall back to local .env for development
+        from etl.load import load_env
+        env = load_env()
+        db_url = env.get('SUPABASE_DB_URL')
+    
+    if not db_url:
+        raise ValueError("SUPABASE_DB_URL not found in secrets or .env")
+    
+    return create_engine(db_url, pool_pre_ping=True)
 
 def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
     """Query leaderboard view from database."""
-    # Map display names to actual view names
     metric_map = {
         "Snap Efficiency": "snap_efficiency",
-        "Consistency Score": "consistency"  # Note: no "_score" suffix
+        "Consistency Score": "consistency"
     }
     
     metric_clean = metric_map.get(metric, metric.lower().replace(' ', '_'))
