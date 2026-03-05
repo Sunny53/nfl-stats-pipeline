@@ -16,7 +16,22 @@ st.set_page_config(
 )
 
 st.title("🏈 NFL QB/WR Analytics Dashboard")
-st.markdown("Advanced metrics for quarterback and wide receiver performance")
+
+with st.expander("📊 About These Metrics", expanded=False):
+    st.markdown("""
+    ### Snap Efficiency
+    **Formula**: `Yards / Estimated Snaps`
+    
+    - **QBs**: Passing yards ÷ (Games × 60)
+    - **WRs**: Receiving yards ÷ (Games × 50)
+    
+    *Note: Uses estimated snaps as proxy. Real snap counts will be added in future update.*
+    
+    ### Consistency Score
+    **Current**: Placeholder (50 for all players)
+    
+    *Future update: Will calculate from weekly performance variance (0-100 scale, higher = more consistent)*
+    """)
 
 # Sidebar navigation
 page = st.sidebar.radio(
