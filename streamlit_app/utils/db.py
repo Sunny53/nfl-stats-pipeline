@@ -2,28 +2,29 @@ import sys
 from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
-
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
 
-# ... rest of file
+# Whitelisted values to prevent injection via f-string in view name
+VALID_POSITIONS = {"qb", "wr"}
+VALID_METRICS = {"snap_efficiency", "consistency"}
+VALID_SPLITS = {"1yr", "5yr", "career"}
 
 def get_engine():
     """Create database engine from Streamlit secrets or local .env."""
     try:
-        # Try Streamlit Cloud secrets first
         db_url = st.secrets["SUPABASE_DB_URL"]
     except:
-        # Fall back to local .env for development
         from etl.load import load_env
         env = load_env()
         db_url = env.get('SUPABASE_DB_URL')
-    
+
     if not db_url:
         raise ValueError("SUPABASE_DB_URL not found in secrets or .env")
-    
+
     return create_engine(db_url, pool_pre_ping=True)
+
 
 def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
     """Query leaderboard view from database."""
@@ -31,16 +32,26 @@ def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
         "Snap Efficiency": "snap_efficiency",
         "Consistency Score": "consistency"
     }
-    
+
     metric_clean = metric_map.get(metric, metric.lower().replace(' ', '_'))
     split_clean = split.lower().replace('/', '')
-    
-    view_name = f"vw_leaderboard_{position.lower()}_{metric_clean}_{split_clean}"
-    
+    position_clean = position.lower()
+
+    # Whitelist check — reject anything not in allowed values
+    if position_clean not in VALID_POSITIONS:
+        raise ValueError(f"Invalid position: {position}")
+    if metric_clean not in VALID_METRICS:
+        raise ValueError(f"Invalid metric: {metric}")
+    if split_clean not in VALID_SPLITS:
+        raise ValueError(f"Invalid split: {split}")
+
+    view_name = f"vw_leaderboard_{position_clean}_{metric_clean}_{split_clean}"
+
     engine = get_engine()
     query = f"SELECT * FROM {view_name} LIMIT 30"
-    
+
     return pd.read_sql(query, engine)
+
 
 def search_player(player_name: str):
     """Search for player by name."""
@@ -49,12 +60,12 @@ def search_player(player_name: str):
         SELECT p.player_id,
                p.name,
                p.position,
-               s.season_year, 
-               s.team, 
-               s.games, 
+               s.season_year,
+               s.team,
+               s.games,
                s.yards,
                s.tds,
-               s.snap_efficiency, 
+               s.snap_efficiency,
                s.consistency_score
         FROM dim_players p
         LEFT JOIN fact_player_seasons s ON p.player_id = s.player_id
@@ -62,6 +73,7 @@ def search_player(player_name: str):
         ORDER BY s.season_year DESC
     """
     return pd.read_sql(query, engine, params=(f"%{player_name}%",))
+
 
 def get_player_career_stats(player_id: str):
     """Get career stats for a player."""
