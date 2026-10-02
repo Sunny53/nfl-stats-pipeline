@@ -15,7 +15,8 @@ def get_engine():
     """Create database engine from Streamlit secrets or local .env."""
     try:
         db_url = st.secrets["SUPABASE_DB_URL"]
-    except:
+    except Exception as e:
+        st.error(f"Secrets error: {e}")
         from etl.load import load_env
         env = load_env()
         db_url = env.get('SUPABASE_DB_URL')
@@ -23,8 +24,11 @@ def get_engine():
     if not db_url:
         raise ValueError("SUPABASE_DB_URL not found in secrets or .env")
 
-    return create_engine(db_url, pool_pre_ping=True)
-
+    try:
+        return create_engine(db_url, pool_pre_ping=True)
+    except Exception as e:
+        st.error(f"Engine error: {e}")
+        raise
 
 def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
     """Query leaderboard view from database."""
