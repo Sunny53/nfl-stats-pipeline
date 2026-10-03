@@ -11,6 +11,7 @@ VALID_POSITIONS = {"qb", "wr"}
 VALID_METRICS = {"snap_efficiency", "consistency"}
 VALID_SPLITS = {"1yr", "5yr", "career"}
 
+
 def get_engine():
     """Create database engine from Streamlit secrets or local .env."""
     try:
@@ -29,6 +30,20 @@ def get_engine():
     except Exception as e:
         st.error(f"Engine error: {e}")
         raise
+
+
+def get_dashboard_stats():
+    """Get total player count and last season in the database."""
+    engine = get_engine()
+    query = """
+        SELECT
+            COUNT(DISTINCT player_id) as player_count,
+            MAX(season_year) as last_season
+        FROM fact_player_seasons
+    """
+    with engine.connect() as conn:
+        return pd.read_sql(query, conn).iloc[0]
+
 
 def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
     """Query leaderboard view from database."""
@@ -54,7 +69,8 @@ def get_leaderboard(position: str, metric: str, split: str) -> pd.DataFrame:
     engine = get_engine()
     query = f"SELECT * FROM {view_name} LIMIT 30"
 
-    return pd.read_sql(query, engine)
+    with engine.connect() as conn:
+        return pd.read_sql(query, conn)
 
 
 def search_player(player_name: str):
@@ -73,10 +89,11 @@ def search_player(player_name: str):
                s.consistency_score
         FROM dim_players p
         LEFT JOIN fact_player_seasons s ON p.player_id = s.player_id
-        WHERE p.name ILIKE %s
+        WHERE p.name ILIKE %(name)s
         ORDER BY s.season_year DESC
     """
-    return pd.read_sql(query, engine, params=(f"%{player_name}%",))
+    with engine.connect() as conn:
+        return pd.read_sql(query, conn, params={"name": f"%{player_name}%"})
 
 
 def get_player_career_stats(player_id: str):
@@ -86,7 +103,8 @@ def get_player_career_stats(player_id: str):
         SELECT season_year, team, games, snaps, yards, tds,
                snap_efficiency, consistency_score
         FROM fact_player_seasons
-        WHERE player_id = %s
+        WHERE player_id = %(player_id)s
         ORDER BY season_year
     """
-    return pd.read_sql(query, engine, params=(player_id,))
+    with engine.connect() as conn:
+        return pd.read_sql(query, conn, params={"player_id": player_id})
