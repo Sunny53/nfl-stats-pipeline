@@ -6,7 +6,7 @@ numpy>=1.24.0
 nfl-data-py>=0.3.0
 
 # Database
-sqlalchemy==1.4.52
+sqlalchemy==2.0.47
 psycopg2-binary>=2.9.0
 
 # Streamlit
