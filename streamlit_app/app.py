@@ -26,7 +26,7 @@ with st.expander("📊 About These Metrics", expanded=False):
     - **WRs**: Receiving yards ÷ offensive snaps played
     
     Measures how many yards a player produces per snap on the field.
-    Higher is better. Uses real snap counts from NFL play-by-play data.
+    Higher is better. Uses real weekly and offensive snap-count data.
     
     ---
     

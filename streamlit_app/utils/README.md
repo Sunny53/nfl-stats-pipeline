@@ -4,7 +4,7 @@ Interactive analytics platform for NFL quarterback and wide receiver performance
 
 ## Tech Stack
 
-- **Data Source**: nfl-data-py (Python)
+- **Data Source**: nflreadpy (Python)
 - **ETL**: Python + Pandas
 - **Database**: Supabase (PostgreSQL)
 - **Frontend**: Streamlit

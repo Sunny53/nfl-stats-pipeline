@@ -36,26 +36,41 @@ def insert_players(df):
     """Insert players into dim_players."""
     engine = get_engine()
     
-    # Clear existing
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text("TRUNCATE TABLE dim_players CASCADE"))
-        conn.commit()
-    
-    # Insert
-    df.to_sql('dim_players', engine, if_exists='append', index=False)
+        df.to_sql('dim_players', conn, if_exists='append', index=False)
     print(f"Inserted {len(df)} players")
 
 def insert_seasons(df):
     """Insert season stats into fact_player_seasons."""
     engine = get_engine()
     
-    # Truncate table first
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text("TRUNCATE TABLE fact_player_seasons"))
-        conn.commit()
         print("Truncated fact_player_seasons")
-    
-    # Define explicit column types for to_sql
+        dtype = {
+            'player_id': String,
+            'season_year': Integer,
+            'team': String,
+            'games': Integer,
+            'snaps': Integer,
+            'attempts': Integer,
+            'completions': Integer,
+            'yards': Integer,
+            'tds': Integer,
+            'ints': Integer,
+            'snap_efficiency': Numeric(10, 4),
+            'yards_per_attempt': Numeric(10, 2),
+            'weekly_cv': Numeric(10, 4),
+            'consistency_score': Numeric(10, 2)
+        }
+        df.to_sql('fact_player_seasons', conn, if_exists='append', index=False, dtype=dtype)
+    print(f"Inserted {len(df)} season records")
+
+
+def load_data(players_df, seasons_df):
+    """Replace both tables atomically."""
+    engine = get_engine()
     dtype = {
         'player_id': String,
         'season_year': Integer,
@@ -72,9 +87,14 @@ def insert_seasons(df):
         'weekly_cv': Numeric(10, 4),
         'consistency_score': Numeric(10, 2)
     }
-    
-    df.to_sql('fact_player_seasons', engine, if_exists='append', index=False, dtype=dtype)
-    print(f"Inserted {len(df)} season records")
+
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE dim_players CASCADE"))
+        players_df.to_sql('dim_players', conn, if_exists='append', index=False)
+        seasons_df.to_sql('fact_player_seasons', conn, if_exists='append', index=False, dtype=dtype)
+
+    print(f"Inserted {len(players_df)} players")
+    print(f"Inserted {len(seasons_df)} season records")
 
 def test_connection():
     """Test database connectivity."""

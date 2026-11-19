@@ -100,7 +100,8 @@ def calculate_metrics(df, weekly_df):
 
     # Calculate efficiency
     df['snap_efficiency'] = (df['yards'] / df['snaps']).round(4)
-    df['yards_per_attempt'] = (df['yards'] / df['attempts'].replace(0, pd.NA)).fillna(0).round(2)
+    denominator = df['attempts'].where(qb_mask, df['targets'])
+    df['yards_per_attempt'] = (df['yards'] / denominator.replace(0, pd.NA)).fillna(0).round(2)
 
     # --- Real Consistency Score ---
     consistency_df = calculate_consistency(weekly_df)

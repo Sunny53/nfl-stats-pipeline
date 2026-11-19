@@ -5,7 +5,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from etl.extract import extract_all_data
 from etl.transform import transform_data
-from etl.load import insert_players, insert_seasons, test_connection
+from etl.load import load_data, test_connection
 
 def run_pipeline():
     print("="*50)
@@ -27,8 +27,7 @@ def run_pipeline():
     
     # Load
     print("\nLoading to database...")
-    insert_players(players)
-    insert_seasons(seasons)
+    load_data(players, seasons)
     
     print("\n" + "="*50)
     print("✅ Pipeline complete!")

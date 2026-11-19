@@ -35,18 +35,18 @@ AND s.season_year = (SELECT MAX(season_year) FROM fact_player_seasons)
 ORDER BY s.snap_efficiency DESC
 LIMIT 30;
 
--- 5 Year (2019-2023)
+-- 5 Year (dynamic rolling window)
 CREATE VIEW vw_leaderboard_qb_snap_efficiency_5yr AS
 SELECT 
     p.player_id,
     p.name,
-    '2019-2023' as period,
+    ((SELECT MAX(season_year) FROM fact_player_seasons) - 4)::text || '-' || (SELECT MAX(season_year) FROM fact_player_seasons)::text as period,
     ROUND(AVG(s.snap_efficiency)::numeric, 4) as value,
     RANK() OVER (ORDER BY AVG(s.snap_efficiency) DESC) as rank
 FROM fact_player_seasons s
 JOIN dim_players p ON s.player_id = p.player_id
 WHERE p.position = 'QB' 
-AND s.season_year BETWEEN 2019 AND 2023
+AND s.season_year > (SELECT MAX(season_year) FROM fact_player_seasons) - 5
 GROUP BY p.player_id, p.name
 ORDER BY value DESC
 LIMIT 30;
@@ -90,13 +90,13 @@ CREATE VIEW vw_leaderboard_qb_consistency_5yr AS
 SELECT 
     p.player_id,
     p.name,
-    '2019-2023' as period,
+    ((SELECT MAX(season_year) FROM fact_player_seasons) - 4)::text || '-' || (SELECT MAX(season_year) FROM fact_player_seasons)::text as period,
     ROUND(AVG(s.consistency_score)::numeric, 2) as value,
     RANK() OVER (ORDER BY AVG(s.consistency_score) DESC) as rank
 FROM fact_player_seasons s
 JOIN dim_players p ON s.player_id = p.player_id
 WHERE p.position = 'QB' 
-AND s.season_year BETWEEN 2019 AND 2023
+AND s.season_year > (SELECT MAX(season_year) FROM fact_player_seasons) - 5
 GROUP BY p.player_id, p.name
 ORDER BY value DESC
 LIMIT 30;
@@ -140,13 +140,13 @@ CREATE VIEW vw_leaderboard_wr_snap_efficiency_5yr AS
 SELECT 
     p.player_id,
     p.name,
-    '2019-2023' as period,
+    ((SELECT MAX(season_year) FROM fact_player_seasons) - 4)::text || '-' || (SELECT MAX(season_year) FROM fact_player_seasons)::text as period,
     ROUND(AVG(s.snap_efficiency)::numeric, 4) as value,
     RANK() OVER (ORDER BY AVG(s.snap_efficiency) DESC) as rank
 FROM fact_player_seasons s
 JOIN dim_players p ON s.player_id = p.player_id
 WHERE p.position = 'WR' 
-AND s.season_year BETWEEN 2019 AND 2023
+AND s.season_year > (SELECT MAX(season_year) FROM fact_player_seasons) - 5
 GROUP BY p.player_id, p.name
 ORDER BY value DESC
 LIMIT 30;
@@ -190,13 +190,13 @@ CREATE VIEW vw_leaderboard_wr_consistency_5yr AS
 SELECT 
     p.player_id,
     p.name,
-    '2019-2023' as period,
+    ((SELECT MAX(season_year) FROM fact_player_seasons) - 4)::text || '-' || (SELECT MAX(season_year) FROM fact_player_seasons)::text as period,
     ROUND(AVG(s.consistency_score)::numeric, 2) as value,
     RANK() OVER (ORDER BY AVG(s.consistency_score) DESC) as rank
 FROM fact_player_seasons s
 JOIN dim_players p ON s.player_id = p.player_id
 WHERE p.position = 'WR' 
-AND s.season_year BETWEEN 2019 AND 2023
+AND s.season_year > (SELECT MAX(season_year) FROM fact_player_seasons) - 5
 GROUP BY p.player_id, p.name
 ORDER BY value DESC
 LIMIT 30;

@@ -1,147 +1,155 @@
-# NFL Clutch Analytics Dashboard
+# NFL Stats Pipeline
 
-A data pipeline and analytics dashboard for NFL quarterback and wide receiver performance metrics.
+[![CI](https://github.com/Sunny53/nfl-stats-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Sunny53/nfl-stats-pipeline/actions/workflows/ci.yml)
 
-🔗 **[Live Dashboard](https://nfl-stats-pipeline.streamlit.app/)**
+An ETL pipeline and analytics dashboard for NFL quarterback and wide receiver performance. It pulls weekly player stats and offensive snap counts, joins them across datasets, computes custom efficiency and consistency metrics, loads a star-schema PostgreSQL database, and serves 12 leaderboard views through a Streamlit app.
 
----
+**[Live dashboard](https://nfl-stats-pipeline.streamlit.app/)** (free hosting: if the app has been idle, click the wake-up button and give it about 30 seconds)
 
-## What It Does
+<!-- TODO: add a dashboard screenshot or GIF here, e.g. ![Dashboard](docs/dashboard.png) -->
 
-This project pulls weekly NFL player data from 2015 to present, aggregates it into seasonal stats, calculates advanced efficiency metrics, and displays them in an interactive Streamlit dashboard.
+## Architecture
 
-**Positions covered:** QB, WR  
-**Seasons:** 2015 → current  
-**Data source:** [nfl_data_py](https://github.com/nflverse/nfl_data_py)  
-**Database:** Supabase (PostgreSQL)
+```mermaid
+flowchart LR
+    A[nfl_data_py<br/>weekly stats] --> E[extract.py]
+    B[nfl_data_py<br/>snap counts] --> E
+    C[nfl_data_py<br/>ID crosswalk] --> E
+    E -->|joined weekly rows| T[transform.py<br/>seasonal aggregates + metrics]
+    T --> L[load.py<br/>SQLAlchemy]
+    L --> D[(Supabase PostgreSQL<br/>dim_players, fact_player_seasons)]
+    D --> V[12 SQL leaderboard views]
+    V --> S[Streamlit dashboard]
+```
 
----
+## Data model
+
+```mermaid
+erDiagram
+    dim_players ||--o{ fact_player_seasons : "player_id"
+    dim_players {
+        text player_id PK
+        text name
+        text position
+    }
+    fact_player_seasons {
+        text player_id FK
+        int season_year
+        text team
+        int games
+        int snaps
+        int attempts
+        int yards
+        numeric snap_efficiency
+        numeric weekly_cv
+        numeric consistency_score
+    }
+```
+
+Schema definitions live in `database/schema.sql` and the leaderboard views in `database/views.sql`, kept separate from the Python code so they are version-controlled and repeatable. The diagram shows the main columns only.
 
 ## Metrics
 
-### Snap Efficiency
-Measures how many yards a player produces per offensive snap.
+**Snap Efficiency**: yards produced per offensive snap.
+- QB: `passing_yards / offensive_snaps`
+- WR: `receiving_yards / offensive_snaps`
 
-- **QB:** `passing_yards / total_snaps`
-- **WR:** `receiving_yards / total_snaps`
-
-Higher is better. Uses real snap counts from NFL play-by-play data.
-
----
-
-### Consistency Score
-Measures how reliably a player performs week to week. Based on the Coefficient of Variation (CV) of weekly yards.
+**Consistency Score**: how steady a player is week to week, based on the Coefficient of Variation (CV) of weekly yards, computed from game-level data *before* it is aggregated to seasons.
 
 ```
 CV = std_dev(weekly_yards) / mean(weekly_yards)
-consistency_score = max(0, 100 - (CV × 100))
+consistency_score = max(0, 100 - (CV x 100))
 ```
 
-- Score of **100** = perfectly consistent (unrealistic)
-- Score of **70+** = very consistent producer
-- Score of **40-60** = boom/bust player
-- Score of **0** = extremely volatile
+| Score | Reading |
+| --- | --- |
+| 70+ | very consistent producer |
+| 40-60 | boom/bust |
+| 0 | extremely volatile |
 
----
+Edge cases: a single-game season gets a neutral 50 (CV is undefined), and a season with zero production scores 0.
 
-## Qualifying Thresholds
+**Qualifying thresholds** (only qualified players appear in leaderboards): QB 200+ pass attempts, WR 40+ targets.
 
-Only qualified players appear in leaderboards:
+## Engineering decisions
 
-| Position | Threshold |
-|----------|-----------|
-| QB | 200+ pass attempts |
-| WR | 40+ targets |
+- **Real snap counts instead of estimates.** An earlier version estimated snaps from games played. It now uses actual offensive snap counts, and players with no snap data are dropped (inner join) rather than approximated, trading coverage for accuracy.
+- **Three-dataset join.** Snap counts use PFR player IDs and weekly stats use GSIS IDs, so a third ID crosswalk dataset maps one to the other before joining on player, season, and week.
+- **Regular season only.** The regular-season filter is applied to the weekly and snap datasets independently so playoff games don't inflate seasonal totals.
+- **Dynamic season range.** The season range is computed from the current date, so new seasons are picked up without code changes.
+- **Edge cases handled explicitly.** Missing IDs, null snap counts, zero production, and single-game seasons each have defined behavior and unit tests.
+- **Secure database access.** User-driven queries are parameterized, dynamic view names are checked against whitelists (`VALID_POSITIONS`, `VALID_METRICS`, `VALID_SPLITS`), secrets live in Streamlit's secrets manager or a gitignored `.env`, and nothing is hardcoded in source.
 
----
+## Leaderboard views
 
-## Tech Stack
+12 views, one per combination of position (QB, WR), metric (snap efficiency, consistency), and time split (1 year, 5 year, career), for example `vw_leaderboard_qb_consistency_5yr`. Career values are the unweighted average of a player's qualified seasons.
 
-| Layer | Tool |
-|-------|------|
-| Data extraction | nfl_data_py |
-| Transformation | Python / pandas |
-| Database | Supabase (PostgreSQL) |
-| Dashboard | Streamlit |
-| Hosting | Streamlit Cloud |
-| Docs | GitHub Pages |
+## Known limitations
 
----
+- Data currently runs through the 2024 season. `nfl_data_py` has been deprecated in favor of `nflreadpy`, so newer seasons require migrating the extract step (see roadmap).
+- The load step is a full refresh (truncate, then insert) rather than an incremental upsert.
+- Players without matching snap-count data are excluded, which slightly reduces coverage for early seasons.
 
-## Run Locally
+## Run locally
 
-**1. Clone the repo**
 ```bash
 git clone https://github.com/Sunny53/nfl-stats-pipeline.git
 cd nfl-stats-pipeline
-```
-
-**2. Create and activate virtual environment**
-```bash
 python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# Mac/Linux
-source .venv/bin/activate
-```
-
-**3. Install dependencies**
-```bash
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-**4. Add environment variables**
-
 Create a `.env` file in the project root:
+
 ```
 SUPABASE_DB_URL=your_supabase_connection_string
 ```
 
-**5. Run the ETL pipeline**
+Then run the pipeline and the app:
+
 ```bash
 python -m etl.pipeline
-```
-
-**6. Launch the dashboard**
-```bash
 python -m streamlit run streamlit_app/app.py
 ```
 
----
+## Tests
 
-## Project Structure
+```bash
+pip install pytest
+python -m pytest -v
+```
+
+The tests cover the consistency score (including edge cases), seasonal aggregation, efficiency metrics, qualifying thresholds, and the full transform output schema. They run offline on small hand-built DataFrames, and CI runs them on every push.
+
+## Project structure
 
 ```
 nfl-stats-pipeline/
 ├── etl/
-│   ├── extract.py       # Downloads NFL data
-│   ├── transform.py     # Aggregates weekly → seasonal, calculates metrics
-│   ├── load.py          # Writes to Supabase
-│   └── pipeline.py      # Orchestrates ETL
-├── streamlit_app/
-│   ├── app.py           # Main dashboard
-│   └── utils/db.py      # Database queries
+│   ├── extract.py        # Downloads and joins NFL data
+│   ├── transform.py      # Weekly -> seasonal, metrics, thresholds
+│   ├── load.py           # Writes to Supabase
+│   ├── pipeline.py       # Orchestrates ETL
+│   └── deploy_views.py   # Deploys the SQL views
 ├── database/
-│   ├── schema.sql       # Table definitions
-│   └── views.sql        # Leaderboard views
-├── docs/                # GitHub Pages
-└── requirements.txt
+│   ├── schema.sql        # Table definitions
+│   └── views.sql         # Leaderboard views
+├── streamlit_app/        # Dashboard
+├── tests/                # Unit tests
+└── .github/workflows/    # CI
 ```
-
----
 
 ## Roadmap
 
+- [x] Real snap counts, regular-season filtering, dynamic seasons
+- [x] Real consistency score from weekly data
+- [x] 12 SQL leaderboard views
+- [x] Unit tests and CI
+- [ ] Migrate extraction from `nfl_data_py` to `nflreadpy` to load 2025 and later seasons
 - [ ] Clutch Performance Index
-- [ ] Value Per Dollar (player production relative to salary via OverTheCap)
-- [ ] Fatigue Factor (short rest, travel distance, weather conditions)
+- [ ] Value Per Dollar (production relative to salary via OverTheCap)
+- [ ] Fatigue Factor (short rest, travel distance, weather)
 - [ ] Momentum Shifts (big play analysis)
-- [ ] Migrate data source from nfl_data_py to RapidAPI for real-time updates
-- [ ] Microsoft Power BI embedded dashboards for advanced visual analytics
-- [ ] 2025 season data (auto-updates when available)
 
----
-
-*Built by [Sunny53](https://github.com/Sunny53)*
+Built by [Sunny Patel](https://github.com/Sunny53).
