@@ -5,14 +5,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from etl.extract import extract_all_data
 from etl.transform import transform_data
-from etl.load import load_data, test_connection
+from etl.load import load_data, check_connection
 
 def run_pipeline():
     print("="*50)
     print("NFL Stats Pipeline")
     print("="*50)
     
-    if not test_connection():
+    if not check_connection():
         return None, None
     
     # Extract

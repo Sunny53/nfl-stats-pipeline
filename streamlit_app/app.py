@@ -6,7 +6,12 @@ PROJECT_ROOT = Path(__file__).parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
-from utils.db import get_leaderboard, search_player, get_player_career_stats
+from utils.db import (
+    get_dashboard_stats,
+    get_leaderboard,
+    search_player,
+    get_player_career_stats,
+)
 import pandas as pd
 
 st.set_page_config(
@@ -66,7 +71,7 @@ with st.expander("📊 About These Metrics", expanded=False):
 # Sidebar navigation
 page = st.sidebar.radio(
     "Select Page",
-    ["QB Leaderboards", "WR Leaderboards", "Player Search"]
+    ["QB Leaderboards", "WR Leaderboards", "Player Search", "Methodology"]
 )
 
 if page == "QB Leaderboards":
@@ -153,6 +158,55 @@ elif page == "WR Leaderboards":
     except Exception as e:
         st.error(f"Error loading data: {e}")
 
+elif page == "Methodology":
+    st.header("Methodology")
+
+    st.subheader("Snap Efficiency")
+    st.markdown("""
+    Snap Efficiency is seasonal yards produced per offensive snap:
+
+    - **Quarterbacks:** passing yards ÷ offensive snaps
+    - **Wide receivers:** receiving yards ÷ offensive snaps
+    """)
+    st.latex(
+        r"\mathrm{Snap\ Efficiency} = "
+        r"\frac{\mathrm{seasonal\ yards}}{\mathrm{seasonal\ offensive\ snaps}}"
+    )
+
+    st.subheader("Consistency Score")
+    st.latex(
+        r"\mathrm{CV} = "
+        r"\frac{\mathrm{standard\ deviation\ of\ weekly\ yards}}"
+        r"{\mathrm{mean\ weekly\ yards}}"
+    )
+    st.latex(
+        r"\mathrm{Consistency\ Score} = "
+        r"\max(0,\ 100 - (\mathrm{CV} \times 100))"
+    )
+    st.markdown("""
+    CV uses weekly passing yards for quarterbacks and weekly receiving yards for
+    wide receivers. A higher score means a player's weekly yardage is more
+    consistent.
+
+    - **Single-game season:** score is 50 because CV is undefined.
+    - **Zero-production season:** score is 0.
+    """)
+
+    st.subheader("Qualifying Thresholds")
+    st.markdown("""
+    - **Quarterbacks:** at least 200 pass attempts
+    - **Wide receivers:** at least 40 targets
+    """)
+
+    st.subheader("Data Source")
+    st.markdown("""
+    Weekly statistics come from nflverse, offensive snap counts from Pro
+    Football Reference, and the PFR-to-GSIS crosswalk from FFverse/DynastyProcess.
+    `nflreadpy` loads these datasets. The pipeline filters stats and snap counts
+    to the regular season, joins by player, season, and week, and retains only
+    rows with a snap-count match.
+    """)
+
 else:  # Player Search
     st.header("Player Search")
 
@@ -204,6 +258,15 @@ else:  # Player Search
 
         except Exception as e:
             st.error(f"Error searching: {e}")
+
+try:
+    latest_season = get_dashboard_stats()["last_season"]
+    if pd.notna(latest_season):
+        st.sidebar.caption(f"Data through season {int(latest_season)}")
+    else:
+        st.sidebar.caption("Data through season unavailable")
+except Exception as exc:
+    st.sidebar.warning(f"Could not load data coverage: {exc}")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("Built with Streamlit + Supabase")

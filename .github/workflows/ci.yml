@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.11"]
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -18,12 +18,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # The transform tests only need pandas. They run offline on small
-      # hand-built DataFrames, so no database or NFL data download is needed.
-      - name: Install test dependencies
+      - name: Install project and test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy pytest
+          pip install -r requirements-etl.txt pytest
 
       - name: Run tests
         run: python -m pytest -v

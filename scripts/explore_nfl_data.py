@@ -1,3 +1,5 @@
+"""Manual exploration script for inspecting downloaded NFL data."""
+
 import nflreadpy as nfl
 df = nfl.load_snap_counts([2023])
 ids = nfl.load_ff_playerids()
