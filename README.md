@@ -103,10 +103,15 @@ Extraction logs the number of snap-count rows without a PFR-to-GSIS crosswalk an
 ```bash
 git clone https://github.com/Sunny53/nfl-stats-pipeline.git
 cd nfl-stats-pipeline
+# Requires Python 3.10 or newer; .python-version selects 3.11 for local tooling.
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+For Streamlit Community Cloud, select Python 3.11 in the [Advanced settings
+Python version dropdown](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy#optional-configure-secrets-and-python-version)
+when deploying.
 
 Create a `.env` file in the project root:
 
