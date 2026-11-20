@@ -41,7 +41,7 @@ def extract_all_data():
         }
     )
     required_weekly_columns = {
-        "season_type", "player_id", "player_name", "position", "season", "week",
+        "season_type", "player_id", "player_display_name", "position", "season", "week",
         "recent_team", "attempts", "completions", "passing_yards", "passing_tds",
         "interceptions", "targets", "receptions", "receiving_yards",
         "receiving_tds",
@@ -52,6 +52,7 @@ def extract_all_data():
         raise KeyError(
             f"nflreadpy player stats are missing required columns: {missing}"
         )
+    weekly["player_name"] = weekly["player_display_name"]
     weekly = weekly[weekly['season_type'] == 'REG']
     weekly_qb_wr = weekly[weekly['position'].isin(['QB', 'WR'])].copy()
     logger.info("Weekly (REG, QB/WR): %d rows", len(weekly_qb_wr))

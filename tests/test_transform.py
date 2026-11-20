@@ -182,6 +182,59 @@ def test_transform_data_with_no_qualified_players_returns_empty_frames():
     assert players.empty and seasons.empty
 
 
+def test_player_dimension_keeps_latest_name_for_player_id():
+    rows = (
+        qb_rows([250] * 7, player_id="QB1", season=2022)
+        + qb_rows([260] * 7, player_id="QB1", season=2023)
+    )
+    for row in rows:
+        row["player_name"] = "Older Name" if row["season"] == 2022 else "Latest Name"
+
+    players, _ = transform_data(make_weekly(rows))
+
+    assert players.loc[players["player_id"] == "QB1", "name"].tolist() == [
+        "Latest Name"
+    ]
+
+
+def test_player_dimension_keeps_latest_position_for_player_id():
+    rows = qb_rows([250] * 7, player_id="PLAYER1", season=2022)
+    rows.extend([
+        {
+            "player_id": "PLAYER1",
+            "player_name": "Test Player",
+            "position": "WR",
+            "season": 2023,
+            "week": week,
+            "receiving_yards": 80,
+            "targets": 8,
+            "receptions": 6,
+            "offense_snaps": 60,
+        }
+        for week in range(1, 6)
+    ])
+
+    players, _ = transform_data(make_weekly(rows))
+
+    assert players.loc[players["player_id"] == "PLAYER1", "position"].tolist() == [
+        "WR"
+    ]
+
+
+def test_player_dimension_has_unique_player_ids():
+    rows = (
+        qb_rows([250] * 7, player_id="QB1", season=2022)
+        + qb_rows([260] * 7, player_id="QB1", season=2023)
+        + qb_rows([240] * 7, player_id="QB2", season=2023)
+    )
+    for row in rows:
+        row["player_name"] = f"{row['player_id']} {row['season']}"
+
+    players, _ = transform_data(make_weekly(rows))
+
+    assert players["player_id"].is_unique
+
+
 # ---------- WR yards per target ----------
 
 def test_wr_yards_per_target_uses_targets_not_attempts():

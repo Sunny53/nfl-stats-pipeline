@@ -170,8 +170,13 @@ def transform_data(weekly_df):
     })
 
     # Player dimension table
-    players = qualified[['player_id', 'player_name', 'position']].drop_duplicates()
-    players = players.rename(columns={'player_name': 'name'})
+    players = (
+        qualified[['player_id', 'player_name', 'position', 'season']]
+        .sort_values('season')
+        .drop_duplicates(subset='player_id', keep='last')
+        .drop(columns='season')
+        .rename(columns={'player_name': 'name'})
+    )
     players['draft_year'] = None
     players['height'] = None
     players['weight'] = None

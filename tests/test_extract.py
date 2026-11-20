@@ -56,6 +56,7 @@ def _weekly_rows(player_ids):
         "season": [2023] * len(player_ids),
         "week": [1] * len(player_ids),
         "player_name": ["Test Player"] * len(player_ids),
+        "player_display_name": ["Canonical Test Player"] * len(player_ids),
         "team": ["NYJ"] * len(player_ids),
         "attempts": [20] * len(player_ids),
         "completions": [10] * len(player_ids),
@@ -100,6 +101,7 @@ def test_extract_logs_crosswalk_and_snap_merge_misses(monkeypatch, caplog):
         result = extract.extract_all_data()
 
     assert result["player_id"].tolist() == ["gsis-1"]
+    assert result["player_name"].tolist() == ["Canonical Test Player"]
     assert result["recent_team"].tolist() == ["NYJ"]
     assert result["interceptions"].tolist() == [0]
     assert result["offense_snaps"].tolist() == [50]
