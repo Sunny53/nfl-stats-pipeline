@@ -109,6 +109,16 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+The root `requirements.txt` contains only the Streamlit app dependencies and is
+the file Streamlit Community Cloud installs. See the [Community Cloud app
+dependencies documentation](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies).
+To run the ETL pipeline locally, install its additional dependencies (this also
+installs `requirements.txt`):
+
+```bash
+pip install -r requirements-etl.txt
+```
+
 For Streamlit Community Cloud, select Python 3.11 in the [Advanced settings
 Python version dropdown](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy#optional-configure-secrets-and-python-version)
 when deploying.

@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# ETL-only dependencies
+# nflreadpy requires Python 3.10 or newer.
+nflreadpy>=0.1.5
+numpy>=1.24.0
+pyarrow>=14.0.0

@@ -1,22 +1,5 @@
-# Data processing
+# Streamlit app dependencies
+streamlit>=1.28.0
 pandas>=2.0.0
-pyarrow>=14.0.0
-numpy>=1.24.0
-
-# NFL data
-# nflreadpy requires Python 3.10 or newer.
-nflreadpy>=0.1.5
-
-# Database
 sqlalchemy==2.0.47
 psycopg2-binary>=2.9.0
-
-# Streamlit
-streamlit>=1.28.0
-plotly>=5.18.0
-
-# Environment
-python-dotenv>=1.0.0
-
-# Utilities
-tqdm>=4.65.0
