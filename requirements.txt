@@ -1,9 +1,11 @@
 # Data processing
 pandas>=2.0.0
+pyarrow>=14.0.0
 numpy>=1.24.0
 
 # NFL data
-nflreadpy>=0.1.0
+# nflreadpy requires Python 3.10 or newer.
+nflreadpy>=0.1.5
 
 # Database
 sqlalchemy==2.0.47

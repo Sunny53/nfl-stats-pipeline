@@ -12,15 +12,19 @@ An ETL pipeline and analytics dashboard for NFL quarterback and wide receiver pe
 
 ```mermaid
 flowchart LR
-    A[nfl_data_py<br/>weekly stats] --> E[extract.py]
-    B[nfl_data_py<br/>snap counts] --> E
-    C[nfl_data_py<br/>ID crosswalk] --> E
+    A[nflreadpy<br/>weekly stats] --> E[extract.py]
+    B[nflreadpy<br/>snap counts] --> E
+    C[nflreadpy<br/>ID crosswalk] --> E
     E -->|joined weekly rows| T[transform.py<br/>seasonal aggregates + metrics]
     T --> L[load.py<br/>SQLAlchemy]
     L --> D[(Supabase PostgreSQL<br/>dim_players, fact_player_seasons)]
     D --> V[12 SQL leaderboard views]
     V --> S[Streamlit dashboard]
 ```
+
+## Tech stack
+
+Extraction uses `nflreadpy` for weekly stats, snap counts, and the player-ID crosswalk. Its Polars DataFrames are converted to pandas for the existing transform pipeline. This requires Python 3.10 or newer.
 
 ## Data model
 
@@ -80,13 +84,17 @@ Edge cases: a single-game season gets a neutral 50 (CV is undefined), and a seas
 - **Edge cases handled explicitly.** Missing IDs, null snap counts, zero production, and single-game seasons each have defined behavior and unit tests.
 - **Secure database access.** User-driven queries are parameterized, dynamic view names are checked against whitelists (`VALID_POSITIONS`, `VALID_METRICS`, `VALID_SPLITS`), secrets live in Streamlit's secrets manager or a gitignored `.env`, and nothing is hardcoded in source.
 
+## Data quality
+
+Extraction logs the number of snap-count rows without a PFR-to-GSIS crosswalk and weekly QB/WR rows without a snap-count match. Unmatched weekly rows remain excluded, and extraction raises an error if no rows remain.
+
 ## Leaderboard views
 
 12 views, one per combination of position (QB, WR), metric (snap efficiency, consistency), and time split (1 year, 5 year, career), for example `vw_leaderboard_qb_consistency_5yr`. Career values are the unweighted average of a player's qualified seasons.
 
 ## Known limitations
 
-- Data currently runs through the 2024 season. `nfl_data_py` has been deprecated in favor of `nflreadpy`, so newer seasons require migrating the extract step (see roadmap).
+- Season coverage depends on nflverse publishing the latest completed season's stats and snap counts. `nflreadpy` is currently marked experimental, so upstream API or data-schema changes may require follow-up adjustments.
 - The load step is a full refresh (truncate, then insert) rather than an incremental upsert.
 - Players without matching snap-count data are excluded, which slightly reduces coverage for early seasons.
 
@@ -146,7 +154,7 @@ nfl-stats-pipeline/
 - [x] Real consistency score from weekly data
 - [x] 12 SQL leaderboard views
 - [x] Unit tests and CI
-- [ ] Migrate extraction from `nfl_data_py` to `nflreadpy` to load 2025 and later seasons
+- [x] Migrate extraction from `nfl_data_py` to `nflreadpy`; include the latest completed season
 - [ ] Clutch Performance Index
 - [ ] Value Per Dollar (production relative to salary via OverTheCap)
 - [ ] Fatigue Factor (short rest, travel distance, weather)
