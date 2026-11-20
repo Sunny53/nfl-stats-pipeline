@@ -28,8 +28,11 @@ def test_load_data_rolls_back_both_tables_when_insert_fails(monkeypatch):
     players = pd.DataFrame([{"player_id": "new", "name": "New Player"}])
     seasons = pd.DataFrame([{"player_id": "new", "season_year": 0}])
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises((IntegrityError, pd.errors.DatabaseError)) as exc_info:
         load.load_data(players, seasons)
+
+    if isinstance(exc_info.value, pd.errors.DatabaseError):
+        assert isinstance(exc_info.value.__cause__, IntegrityError)
 
     with engine.connect() as conn:
         assert conn.execute(
