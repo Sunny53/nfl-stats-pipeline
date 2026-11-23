@@ -30,7 +30,10 @@ def run_pipeline():
     load_data(players, seasons)
     
     print("\n" + "="*50)
-    print("✅ Pipeline complete!")
+    try:
+        print("OK: Pipeline complete!")
+    except UnicodeEncodeError:
+        sys.stdout.buffer.write(b"OK: Pipeline complete!\n")
     print("="*50)
     
     return players, seasons

@@ -1,4 +1,5 @@
 import os
+import sys
 from sqlalchemy import create_engine, text
 from pathlib import Path
 import pandas as pd
@@ -19,7 +20,10 @@ def load_env():
                     env[key.strip()] = value.strip()
         return env
     except Exception as e:
-        print(f"Warning: Could not load .env: {e}")
+        try:
+            print(f"Warning: Could not load .env: {e}")
+        except UnicodeEncodeError:
+            print("Warning: Could not load .env")
         return {}
 
 def get_engine():
@@ -72,8 +76,19 @@ def load_data(players_df, seasons_df):
         insert_players(conn, players_df)
         insert_seasons(conn, seasons_df)
 
-    print(f"Inserted {len(players_df)} players")
-    print(f"Inserted {len(seasons_df)} season records")
+    _safe_print(f"Inserted {len(players_df)} players")
+    _safe_print(f"Inserted {len(seasons_df)} season records")
+
+
+def _safe_print(message):
+    """Print without raising console encoding errors."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+        sys.stdout.buffer.write(
+            (message.encode(encoding, errors="backslashreplace") + b"\n")
+        )
 
 
 def check_connection():
@@ -83,10 +98,10 @@ def check_connection():
         with engine.connect() as conn:
             result = conn.execute(text("SELECT version();"))
             version = result.fetchone()[0]
-            print(f"✅ Connected: {version[:60]}...")
+            _safe_print(f"OK: Connected: {version[:60]}...")
         return True
     except Exception as e:
-        print(f"❌ Failed: {e}")
+        _safe_print(f"FAILED: {e}")
         return False
 
 if __name__ == "__main__":
