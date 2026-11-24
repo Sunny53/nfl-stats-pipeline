@@ -170,6 +170,8 @@ nfl-stats-pipeline/
 - [x] 12 SQL leaderboard views
 - [x] Unit tests and CI
 - [x] Migrate extraction from `nfl_data_py` to `nflreadpy`; include the latest completed season
+- [ ] Current-season time split: add an in-progress "Current season" option alongside 1 year, 5 year, and Career in the leaderboards. It would pull the live season from nflreadpy (player stats refresh nightly after game days), use thresholds scaled to games played so far, label results as in progress, and keep the season out of the 5-year and Career views until it finishes.
+- [ ] Scheduled in-season refresh: run the pipeline weekly during the season with a GitHub Actions workflow, using the database connection string stored as a repository secret.
 - [ ] Clutch Performance Index
 - [ ] Value Per Dollar (production relative to salary via OverTheCap)
 - [ ] Fatigue Factor (short rest, travel distance, weather)
