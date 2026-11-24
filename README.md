@@ -6,6 +6,8 @@ An ETL pipeline and analytics dashboard for NFL quarterback and wide receiver pe
 
 **[Live dashboard](https://nfl-stats-pipeline.streamlit.app/)** (free hosting: if the app has been idle, click the wake-up button and give it about 30 seconds)
 
+**Current data:** 440 players, 1,469 qualified player-seasons, 11 seasons (2015-2025).
+
 <!-- TODO: add a dashboard screenshot or GIF here, e.g. ![Dashboard](docs/dashboard.png) -->
 
 ## Architecture
@@ -81,6 +83,7 @@ Edge cases: a single-game season gets a neutral 50 (CV is undefined), and a seas
 - **Three-dataset join.** Snap counts use PFR player IDs and weekly stats use GSIS IDs, so a third ID crosswalk dataset maps one to the other before joining on player, season, and week.
 - **Regular season only.** The regular-season filter is applied to the weekly and snap datasets independently so playoff games don't inflate seasonal totals.
 - **Dynamic season range.** The season range is computed from the current date, so new seasons are picked up without code changes.
+- **Latest player identity.** Player names come from nflreadpy's `player_display_name`, and the player dimension keeps each player's latest name and position.
 - **Edge cases handled explicitly.** Missing IDs, null snap counts, zero production, and single-game seasons each have defined behavior and unit tests.
 - **Secure database access.** User-driven queries are parameterized, dynamic view names are checked against whitelists (`VALID_POSITIONS`, `VALID_METRICS`, `VALID_SPLITS`), secrets live in Streamlit's secrets manager or a gitignored `.env`, and nothing is hardcoded in source.
 
@@ -94,7 +97,7 @@ Extraction logs the number of snap-count rows without a PFR-to-GSIS crosswalk an
 
 ## Known limitations
 
-- Season coverage depends on nflverse publishing the latest completed season's stats and snap counts. `nflreadpy` is currently marked experimental, so upstream API or data-schema changes may require follow-up adjustments.
+- Data now runs 2015-2025 via `nflreadpy`. Coverage for 2015-2018 improved because of the new snap-count source (observed, not proven as the only cause). `nflreadpy` is currently marked experimental, so upstream API or data-schema changes may require follow-up adjustments.
 - The load step is a full refresh (truncate, then insert) rather than an incremental upsert.
 - Players without matching snap-count data are excluded, which slightly reduces coverage for early seasons.
 
@@ -103,17 +106,17 @@ Extraction logs the number of snap-count rows without a PFR-to-GSIS crosswalk an
 ```bash
 git clone https://github.com/Sunny53/nfl-stats-pipeline.git
 cd nfl-stats-pipeline
-# Requires Python 3.10 or newer; .python-version selects 3.11 for local tooling.
+# Use Python 3.11 (matches .python-version and CI).
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-The root `requirements.txt` contains only the Streamlit app dependencies and is
+`requirements.txt` contains only the Streamlit app/dashboard dependencies and is
 the file Streamlit Community Cloud installs. See the [Community Cloud app
 dependencies documentation](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies).
-To run the ETL pipeline locally, install its additional dependencies (this also
-installs `requirements.txt`):
+To run the ETL pipeline locally, install its additional dependencies with
+`requirements-etl.txt` (it includes `-r requirements.txt`):
 
 ```bash
 pip install -r requirements-etl.txt
