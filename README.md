@@ -8,7 +8,7 @@ An ETL pipeline and analytics dashboard for NFL quarterback and wide receiver pe
 
 **Current data:** 440 players, 1,469 qualified player-seasons, 11 seasons (2015-2025).
 
-<!-- TODO: add a dashboard screenshot or GIF here, e.g. ![Dashboard](docs/dashboard.png) -->
+![NFL dashboard demo cycling through QB leaderboard, WR leaderboard, and player search](docs/images/dashboard-demo.gif)
 
 ## Architecture
 
@@ -23,6 +23,16 @@ flowchart LR
     D --> V[12 SQL leaderboard views]
     V --> S[Streamlit dashboard]
 ```
+
+## Screenshots
+
+![QB leaderboard showing Snap Efficiency career split rankings](docs/images/qb-leaderboard.png)
+
+![WR leaderboard showing Consistency Score 1-year split rankings](docs/images/wr-leaderboard.png)
+
+![Player Search results for Aaron Rodgers with career stats](docs/images/player-search.png)
+
+![Methodology page explaining Snap Efficiency, Consistency Score, thresholds, and data sources](docs/images/methodology.png)
 
 ## Tech stack
 
